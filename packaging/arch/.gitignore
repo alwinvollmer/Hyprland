@@ -1,0 +1,5 @@
+/src/
+/pkg/
+/hyprland/
+*.pkg.tar.*
+*.log

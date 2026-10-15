@@ -561,6 +561,8 @@ void CWLDataDeviceProtocol::initiateDrag(WP<CWLDataSourceResource> currentSource
         abortDrag();
     }
 
+    m_dnd.dropped = false;
+
     Pointer::Cursor::overrideController->setOverride("grabbing", Pointer::Cursor::CURSOR_OVERRIDE_DND);
     m_dnd.overriddenCursor = true;
 
@@ -764,6 +766,13 @@ void CWLDataDeviceProtocol::dropDrag() {
         Pointer::Cursor::overrideController->unsetOverride(Pointer::Cursor::CURSOR_OVERRIDE_DND);
     m_dnd.overriddenCursor = false;
     cleanupDndState(false, false, false);
+
+    // The target still owes us wl_data_offer.finish, but the drag itself is
+    // over: release input so a target that blocks in its drop handler cannot
+    // freeze pointer input for the whole session.
+    m_dnd.dropped = true;
+    g_pInputManager->simulateMouseMovement();
+    g_pSeatManager->resendEnterEvents();
 }
 
 bool CWLDataDeviceProtocol::wasDragSuccessful() {
@@ -795,10 +804,12 @@ void CWLDataDeviceProtocol::completeDrag() {
         m_dnd.currentSource->sendDndFinished();
     }
 
+    m_dnd.dropped = false;
     cleanupDndState(true, true, true);
 }
 
 void CWLDataDeviceProtocol::abortDrag() {
+    m_dnd.dropped = false;
     cleanupDndState(false, false, false);
 
     if (m_dnd.overriddenCursor)
@@ -850,11 +861,12 @@ void CWLDataDeviceProtocol::renderDND(PHLMONITOR pMonitor, const Time::steady_tp
 }
 
 bool CWLDataDeviceProtocol::dndActive() {
-    return !!m_dnd.currentSource;
+    return m_dnd.currentSource && !m_dnd.dropped;
 }
 
 void CWLDataDeviceProtocol::abortDndIfPresent() {
-    if (!dndActive())
+    // also covers a session that was dropped but never finished
+    if (!m_dnd.currentSource)
         return;
     abortDrag();
 }

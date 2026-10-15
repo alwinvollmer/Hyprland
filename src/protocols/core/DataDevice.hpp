@@ -142,6 +142,10 @@ class CWLDataDeviceProtocol : public IWaylandProtocol {
     void renderDND(PHLMONITOR pMonitor, const Time::steady_tp& when);
     // for inputmgr to force refocus
     // TODO: move handling to seatmgr
+    // true only while a drag is in progress. Once the drop has been sent the
+    // session may still wait for the target's wl_data_offer.finish, but input
+    // must flow normally again: a target that blocks in its drop handler
+    // (e.g. a modal dialog) would otherwise starve every client of clicks.
     bool dndActive();
 
     // called on an escape key pressed, for moments where it gets stuck
@@ -175,6 +179,8 @@ class CWLDataDeviceProtocol : public IWaylandProtocol {
         WP<CWLSurfaceResource>  originSurface;
         std::optional<Vector2D> touchPos;
         bool                    overriddenCursor = false;
+        // drop sent, waiting for the target to finish
+        bool                    dropped = false;
         CHyprSignalListener     dndSurfaceDestroy;
         CHyprSignalListener     dndSurfaceCommit;
 

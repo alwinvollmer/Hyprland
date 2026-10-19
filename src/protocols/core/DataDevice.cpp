@@ -545,6 +545,13 @@ void CWLDataDeviceProtocol::onKeyboardFocus() {
 }
 
 void CWLDataDeviceProtocol::onDndPointerFocus() {
+    // After the drop, dropDrag() releases input and the pointer refocuses the
+    // target, which lands here. The dropped offer must stay alive: the target
+    // still owes wl_data_offer.receive/finish on it, and killing it here made
+    // every Wayland-to-Wayland drop silently deliver nothing.
+    if (m_dnd.dropped)
+        return;
+
     for (auto const& o : m_offers) {
         if (o->m_source && !o->m_source->hasDnd())
             continue;

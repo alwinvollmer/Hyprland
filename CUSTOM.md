@@ -12,6 +12,11 @@ as the pacman package `hyprland-custom` (provides/conflicts `hyprland`, so
   (merged on main 2026-08-08, not in 0.56.2): fixes blur flickering on the
   fp16/HDR monitor after every boot. Drop it when merging a release that
   contains it (the merge will conflict or turn it into a no-op).
+- `renderer/blur: restore fp16 clamp in blur1, guard against NaN/Inf` — THE
+  actual fix for the HDMI-A-1 (HDR/fp16) blur flicker with passes >= 2
+  (verified 2026-10-23; #15791 alone did not fix it). Upstream main still
+  lacks the clamp (removed in #14070, comment left behind): re-apply on every
+  merge until upstream fixes it, and consider reporting it.
 
 ## Updating to a new upstream release
     git fetch upstream --tags
